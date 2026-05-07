@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
+<title>ひらがな・カタカナ — JLPT 読解</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Space+Mono:wght@700&display=swap');
+
+:root {
+  --bg: #0f0f1a;
+  --card: #1a1a2e;
+  --card2: #16213e;
+  --border: rgba(255,255,255,.08);
+  --text: #f0f0f0;
+  --sub: rgba(255,255,255,.45);
+  --accent: #4f8ef7;
+  --h-color: #e91e8c;
+  --k-color: #00bcd4;
+  --radius: 14px;
+  --shadow: 0 4px 20px rgba(0,0,0,.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+/* ── TOP NAV ── */
+.topnav {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: .9rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.back-btn {
+  background: rgba(255,255,255,.08);
+  border: none; color: var(--text);
+  width: 36px; height: 36px;
+  border-radius: 50%; font-size: 1.2rem;
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  flex-shrink: 0; text-decoration: none;
+}
+.nav-title { font-size: 1rem; font-weight: 700; flex: 1; }
+.nav-sub { font-size: .72rem; color: var(--sub); }
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  padding: .8rem 1rem .4rem;
+  gap: .5rem;
+  background: var(--bg);
+  position: sticky;
+  top: 57px;
+  z-index: 99;
+  border-bottom: 1px solid var(--border);
+}
+.tab {
+  flex: 1; padding: .6rem .5rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--sub);
+  font-family: inherit;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  text-align: center;
+}
+.tab.active.hira { background: var(--h-color); border-color: var(--h-color); color: #fff; }
+.tab.active.kata { background: var(--k-color); border-color: var(--k-color); color: #fff; }
+.tab.active.both { background: linear-gradient(135deg,var(--h-color),var(--k-color)); border-color: transparent; color: #fff; }
+
+/* ── MODE TOGGLE ── */
+.mode-bar {
+  display: flex;
+  padding: .6rem 1rem;
+  gap: .4rem;
+  overflow-x: auto;
+  background: var(--bg);
+}
+.mode-pill {
+  padding: .3rem .8rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--sub);
+  font-size: .72rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.mode-pill.active { background: rgba(79,142,247,.2); border-color: var(--accent); color: var(--accent); }
+
+/* ── KANA GRID ── */
+.grid-wrap { padding: .8rem 1rem; }
+.group-label {
+  font-size: .65rem;
+  color: var(--sub);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: .5rem;
+  margin-top: 1rem;
+  padding-left: .2rem;
+}
+.kana-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: .4rem;
+  margin-bottom: .5rem;
+}
+.kana-cell {
+  background: var(--card);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: .55rem .2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: all .15s;
+  min-height: 58px;
+  justify-content: center;
+}
+.kana-cell:active { transform: scale(.94); }
+.kana-cell.hira-cell { border-color: rgba(233,30,140,.2); }
+.kana-cell.kata-cell { border-color: rgba(0,188,212,.2); }
+.kana-cell.hira-cell:active { background: rgba(233,30,140,.15); }
+.kana-cell.kata-cell:active { background: rgba(0,188,212,.15); }
+.kana-cell.empty { background: transparent; border-color: transparent; cursor: default; pointer-events: none; }
+.kana-cell.tagged { border-color: #f9a825; background: rgba(249,168,37,.08); }
+
+.kana-char {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.hira-char { color: #f48fb1; }
+.kata-char { color: #80deea; }
+.kana-rom {
+  font-size: .6rem;
+  color: var(--sub);
+  letter-spacing: .03em;
+  font-family: 'Space Mono', monospace;
+}
+.kana-tag-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #f9a825;
+  margin-top: 1px;
+  display: none;
+}
+.kana-cell.tagged .kana-tag-dot { display: block; }
+
+/* BOTH mode — show hira + kata side by side */
+.kana-cell.both-cell {
+  padding: .4rem .2rem;
+  gap: 1px;
+}
+.both-pair {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.both-sep {
+  font-size: .6rem;
+  color: rgba(255,255,255,.2);
+}
+
+/* ── POPUP ── */
+.pop-ov {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  backdrop-filter: blur(4px);
+}
+.pop-ov.show { display: flex; }
+.kpop {
+  background: var(--card2);
+  border-radius: 20px;
+  padding: 2rem 1.5rem 1.5rem;
+  width: 100%;
+  max-width: 300px;
+  text-align: center;
+  animation: su .25s ease;
+  position: relative;
+  border: 1px solid var(--border);
+}
+@keyframes su { from { transform: scale(.9) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+.pclose {
+  position: absolute; top: 12px; right: 14px;
+  background: rgba(255,255,255,.08); border: none;
+  border-radius: 50%; width: 28px; height: 28px;
+  font-size: .9rem; cursor: pointer; color: var(--sub);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.pop-pair {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+.pop-kana-block { text-align: center; }
+.pop-kana-char { font-size: 4rem; font-weight: 700; line-height: 1; }
+.pop-kana-label { font-size: .65rem; color: var(--sub); margin-top: 3px; }
+
+.pop-rom {
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  color: var(--text);
+  margin-bottom: .5rem;
+}
+.pop-examples {
+  background: rgba(255,255,255,.04);
+  border-radius: 10px;
+  padding: .7rem;
+  margin-bottom: 1rem;
+}
+.pop-ex-label { font-size: .65rem; color: var(--sub); margin-bottom: .4rem; }
+.pop-ex-item {
+  font-size: .85rem;
+  padding: .2rem 0;
+  color: var(--text);
+}
+.pop-ex-item span { color: var(--sub); font-size: .75rem; margin-left: .3rem; }
+
+.pop-tag-btn {
+  width: 100%;
+  padding: .7rem;
+  border-radius: 12px;
+  border: none;
+  font-family: inherit;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+.pop-tag-btn.untagged { background: rgba(255,255,255,.08); color: var(--sub); }
+.pop-tag-btn.tagged { background: #f9a825; color: #fff; }
+
+/* ── QUIZ MODE ── */
+.quiz-banner {
+  background: linear-gradient(135deg, #1a237e, #4a148c);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+  margin: .5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,.1);
+}
+.quiz-banner:active { transform: scale(.98); }
+.quiz-ico { font-size: 1.6rem; }
+.quiz-info { flex: 1; }
+.quiz-title { font-size: .9rem; font-weight: 700; }
+.quiz-sub { font-size: .72rem; color: rgba(255,255,255,.6); margin-top: 2px; }
+
+/* ── QUIZ SCREEN ── */
+#quiz-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 300;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+}
+#quiz-screen.show { display: flex; }
+.quiz-progress {
+  width: 100%; max-width: 360px;
+  background: rgba(255,255,255,.08);
+  height: 4px; border-radius: 2px;
+  margin-bottom: 2rem; overflow: hidden;
+}
+.quiz-prog-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s; }
+.quiz-question { font-size: 5rem; font-weight: 700; margin-bottom: 1.5rem; text-align: center; }
+.quiz-instruction { font-size: .8rem; color: var(--sub); margin-bottom: 1.5rem; text-align: center; }
+.quiz-choices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .6rem;
+  width: 100%;
+  max-width: 360px;
+}
+.quiz-choice {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem .5rem;
+  text-align: center;
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 1.1rem;
+  color: var(--text);
+  transition: all .15s;
+}
+.quiz-choice:active { transform: scale(.96); }
+.quiz-choice.correct { background: #1b5e20; border-color: #43a047; color: #fff; }
+.quiz-choice.wrong { background: #b71c1c; border-color: #ef5350; color: #fff; }
+.quiz-score { font-size: .85rem; color: var(--sub); margin-top: 1.5rem; }
+.quiz-close {
+  position: fixed; top: 1.2rem; right: 1.2rem;
+  background: rgba(255,255,255,.1); border: none; color: var(--text);
+  width: 36px; height: 36px; border-radius: 50%;
+  font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 30px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(30,30,50,.95);
+  color: #fff; padding: .6rem 1.2rem;
+  border-radius: 20px; font-size: .8rem;
+  opacity: 0; transition: all .3s; z-index: 999;
+  pointer-events: none; white-space: nowrap;
+  border: 1px solid rgba(255,255,255,.1);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<!-- KANA POPUP -->
+<div id="pop-ov" class="pop-ov" onclick="if(event.target===this)closePop()">
+  <div class="kpop">
+    <button class="pclose" onclick="closePop()">✕</button>
+    <div class="pop-pair" id="pop-pair"></div>
+    <div class="pop-rom" id="pop-rom"></div>
+    <div class="pop-examples" id="pop-examples"></div>
+    <button class="pop-tag-btn" id="pop-tag-btn" onclick="toggleTag()"></button>
+  </div>
+</div>
+
+<!-- QUIZ SCREEN -->
+<div id="quiz-screen">
+  <button class="quiz-close" onclick="closeQuiz()">✕</button>
+  <div class="quiz-progress"><div class="quiz-prog-fill" id="qprog"></div></div>
+  <div class="quiz-question" id="q-question"></div>
+  <div class="quiz-instruction" id="q-instr"></div>
+  <div class="quiz-choices" id="q-choices"></div>
+  <div class="quiz-score" id="q-score"></div>
+</div>
+
+<!-- TOP NAV -->
+<div class="topnav">
+  <a href="index.html" class="back-btn">‹</a>
+  <div>
+    <div class="nav-title">ひらがな・カタカナ</div>
+    <div class="nav-sub">Hiragana &amp; Katakana Chart</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab hira active" onclick="setTab('hira',this)">ひらがな</button>
+  <button class="tab kata" onclick="setTab('kata',this)">カタカナ</button>
+  <button class="tab both" onclick="setTab('both',this)">両方</button>
+</div>
+
+<!-- MODE BAR -->
+<div class="mode-bar">
+  <button class="mode-pill active" onclick="setMode('all',this)">すべて</button>
+  <button class="mode-pill" onclick="setMode('basic',this)">清音</button>
+  <button class="mode-pill" onclick="setMode('dakuten',this)">濁音・半濁音</button>
+  <button class="mode-pill" onclick="setMode('combo',this)">拗音</button>
+  <button class="mode-pill" onclick="setMode('tagged',this)">タグ済み ★</button>
+</div>
+
+<!-- QUIZ BANNER -->
+<div class="quiz-banner" onclick="startQuiz()">
+  <span class="quiz-ico">🎯</span>
+  <div class="quiz-info">
+    <div class="quiz-title">クイズモード / Quiz Mode</div>
+    <div class="quiz-sub">読み方を当てよう！タップして開始</div>
+  </div>
+  <span style="color:rgba(255,255,255,.4);font-size:1.3rem">›</span>
+</div>
+
+<!-- KANA GRID -->
+<div class="grid-wrap" id="grid-wrap"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// KANA DATA
+// ═══════════════════════════════════════════════
+var BASIC = [
+  // [hiragana, katakana, romaji, example_word, example_meaning]
+  ['あ','ア','a','あめ','rain'],
+  ['い','イ','i','いぬ','dog'],
+  ['う','ウ','u','うみ','sea'],
+  ['え','エ','e','えき','station'],
+  ['お','オ','o','おかね','money'],
+  ['か','カ','ka','かさ','umbrella'],
+  ['き','キ','ki','きって','stamp'],
+  ['く','ク','ku','くに','country'],
+  ['け','ケ','ke','けいたい','mobile'],
+  ['こ','コ','ko','こども','child'],
+  ['さ','サ','sa','さかな','fish'],
+  ['し','シ','shi','しごと','work'],
+  ['す','ス','su','すし','sushi'],
+  ['せ','セ','se','せんせい','teacher'],
+  ['そ','ソ','so','そら','sky'],
+  ['た','タ','ta','たべもの','food'],
+  ['ち','チ','chi','ちかてつ','subway'],
+  ['つ','ツ','tsu','つき','moon'],
+  ['て','テ','te','てがみ','letter'],
+  ['と','ト','to','とけい','clock'],
+  ['な','ナ','na','なまえ','name'],
+  ['に','ニ','ni','にほん','Japan'],
+  ['ぬ','ヌ','nu','ぬの','cloth'],
+  ['ね','ネ','ne','ねこ','cat'],
+  ['の','ノ','no','のみもの','drink'],
+  ['は','ハ','ha','はな','flower'],
+  ['ひ','ヒ','hi','ひと','person'],
+  ['ふ','フ','fu','ふじさん','Mt. Fuji'],
+  ['へ','ヘ','he','へや','room'],
+  ['ほ','ホ','ho','ほん','book'],
+  ['ま','マ','ma','まち','town'],
+  ['み','ミ','mi','みず','water'],
+  ['む','ム','mu','むし','insect'],
+  ['め','メ','me','めがね','glasses'],
+  ['も','モ','mo','もの','thing'],
+  ['や','ヤ','ya','やさい','vegetable'],
+  [null,null,null,null,null],
+  ['ゆ','ユ','yu','ゆき','snow'],
+  [null,null,null,null,null],
+  ['よ','ヨ','yo','よる','night'],
+  ['ら','ラ','ra','らいねん','next year'],
+  ['り','リ','ri','りんご','apple'],
+  ['る','ル','ru','るすばん','home alone'],
+  ['れ','レ','re','れんしゅう','practice'],
+  ['ろ','ロ','ro','ろうか','corridor'],
+  ['わ','ワ','wa','わたし','I/me'],
+  [null,null,null,null,null],
+  [null,null,null,null,null],
+  [null,null,null,null,null],
+  ['を','ヲ','wo','(object marker)','-'],
+  ['ん','ン','n','てんき','weather'],
+  [null,null,null,null,null],
+  [null,null,null,null,null],
+  [null,null,null,null,null],
+];
+
+var DAKUTEN = [
+  ['が','ガ','ga','がっこう','school'],
+  ['ぎ','ギ','gi','ぎんこう','bank'],
+  ['ぐ','グ','gu','ぐあい','condition'],
+  ['げ','ゲ','ge','げんき','healthy'],
+  ['ご','ゴ','go','ごはん','meal'],
+  ['ざ','ザ','za','ざっし','magazine'],
+  ['じ','ジ','ji','じかん','time'],
+  ['ず','ズ','zu','ずつう','headache'],
+  ['ぜ','ゼ','ze','ぜんぶ','all'],
+  ['ぞ','ゾ','zo','ぞう','elephant'],
+  ['だ','ダ','da','だいがく','university'],
+  ['ぢ','ヂ','ji','(rare)',''],
+  ['づ','ヅ','zu','(rare)',''],
+  ['で','デ','de','でんき','electricity'],
+  ['ど','ド','do','どようび','Saturday'],
+  ['ば','バ','ba','ばしょ','place'],
+  ['び','ビ','bi','びょういん','hospital'],
+  ['ぶ','ブ','bu','ぶんか','culture'],
+  ['べ','ベ','be','べんきょう','study'],
+  ['ぼ','ボ','bo','ぼうし','hat'],
+  ['ぱ','パ','pa','パン','bread'],
+  ['ぴ','ピ','pi','ピアノ','piano'],
+  ['ぷ','プ','pu','プール','pool'],
+  ['ぺ','ペ','pe','ペット','pet'],
+  ['ぽ','ポ','po','ポスト','mailbox'],
+];
+
+var COMBO = [
+  ['きゃ','キャ','kya','きゃく','guest'],
+  ['きゅ','キュ','kyu','きゅうり','cucumber'],
+  ['きょ','キョ','kyo','きょうしつ','classroom'],
+  ['しゃ','シャ','sha','しゃしん','photo'],
+  ['しゅ','シュ','shu','しゅみ','hobby'],
+  ['しょ','ショ','sho','しょくじ','meal'],
+  ['ちゃ','チャ','cha','おちゃ','tea'],
+  ['ちゅ','チュ','chu','ちゅうもん','order'],
+  ['ちょ','チョ','cho','ちょうど','exactly'],
+  ['にゃ','ニャ','nya','にゃんこ','kitty'],
+  ['にゅ','ニュ','nyu','ニュース','news'],
+  ['にょ','ニョ','nyo','(rare)',''],
+  ['ひゃ','ヒャ','hya','ひゃく','hundred'],
+  ['ひゅ','ヒュ','hyu','ヒューズ','fuse'],
+  ['ひょ','ヒョ','hyo','ひょうじゅん','standard'],
+  ['みゃ','ミャ','mya','みゃく','pulse'],
+  ['みゅ','ミュ','myu','ミュージック','music'],
+  ['みょ','ミョ','myo','みょうじ','surname'],
+  ['りゃ','リャ','rya','(rare)',''],
+  ['りゅ','リュ','ryu','りゅうがく','study abroad'],
+  ['りょ','リョ','ryo','りょうり','cooking'],
+  ['ぎゃ','ギャ','gya','ぎゃく','reverse'],
+  ['ぎゅ','ギュ','gyu','ぎゅうにゅう','milk'],
+  ['ぎょ','ギョ','gyo','ぎょうざ','gyoza'],
+  ['じゃ','ジャ','ja','じゃま','hindrance'],
+  ['じゅ','ジュ','ju','じゅぎょう','class'],
+  ['じょ','ジョ','jo','じょうず','skilled'],
+  ['びゃ','ビャ','bya','びゃく','(rare)'],
+  ['びゅ','ビュ','byu','ビュッフェ','buffet'],
+  ['びょ','ビョ','byo','びょうき','illness'],
+  ['ぴゃ','ピャ','pya','(rare)',''],
+  ['ぴゅ','ピュ','pyu','ピューマ','puma'],
+  ['ぴょ','ピョ','pyo','ぴょんぴょん','hop hop'],
+];
+
+// Tag storage
+var KANA_TAG_KEY = 'jlpt_kana_tags';
+var kanaTags = {};
+function loadKanaTags() {
+  try { var r=localStorage.getItem(KANA_TAG_KEY); if(r)kanaTags=JSON.parse(r); } catch(e){}
+}
+function saveKanaTags() {
+  try { localStorage.setItem(KANA_TAG_KEY,JSON.stringify(kanaTags)); } catch(e){}
+}
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+var currentTab  = 'hira';
+var currentMode = 'all';
+var popData = null;  // currently open kana data
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+function getDataForMode() {
+  var sets = [];
+  if (currentMode === 'all' || currentMode === 'basic')   sets.push({label:'清音 / Basic', data: BASIC, rows: 10, cols: 5});
+  if (currentMode === 'all' || currentMode === 'dakuten') sets.push({label:'濁音・半濁音 / Voiced', data: DAKUTEN, rows: 5, cols: 5});
+  if (currentMode === 'all' || currentMode === 'combo')   sets.push({label:'拗音 / Combination', data: COMBO, rows: null, cols: 3});
+  if (currentMode === 'tagged') {
+    // filter only tagged
+    var all = BASIC.concat(DAKUTEN).concat(COMBO);
+    var filtered = all.filter(function(row) {
+      if (!row[0] && !row[1]) return false;
+      var key = currentTab==='kata' ? row[1] : row[0];
+      return key && kanaTags[key];
+    });
+    sets.push({label:'タグ済み / Tagged ★', data: filtered, rows: null, cols: 5});
+  }
+  return sets;
+}
+
+function render() {
+  var wrap = document.getElementById('grid-wrap');
+  wrap.innerHTML = '';
+  var sets = getDataForMode();
+
+  if (!sets.length || (sets[0].data && !sets[0].data.filter(function(r){return r[0]||r[1];}).length)) {
+    wrap.innerHTML = '<div style="text-align:center;padding:3rem;color:rgba(255,255,255,.3)">タグした仮名がありません</div>';
+    return;
+  }
+
+  sets.forEach(function(set) {
+    var lbl = document.createElement('div');
+    lbl.className = 'group-label';
+    lbl.textContent = set.label;
+    wrap.appendChild(lbl);
+
+    var grid = document.createElement('div');
+    grid.className = 'kana-grid';
+    grid.style.gridTemplateColumns = 'repeat(' + set.cols + ', 1fr)';
+
+    set.data.forEach(function(row) {
+      var cell = document.createElement('div');
+      if (!row[0] && !row[1]) {
+        cell.className = 'kana-cell empty';
+        cell.innerHTML = '';
+        grid.appendChild(cell);
+        return;
+      }
+
+      var hira = row[0], kata = row[1], rom = row[2], ex = row[3], exm = row[4];
+      var tagKey = currentTab==='kata' ? kata : hira;
+      var isTagged = !!(tagKey && kanaTags[tagKey]);
+
+      if (currentTab === 'both') {
+        cell.className = 'kana-cell both-cell' + (isTagged?' tagged':'');
+        cell.onclick = function(){ openPop(row); };
+        cell.innerHTML =
+          '<div class="both-pair">' +
+            (hira?'<span class="kana-char hira-char">'+hira+'</span>':'') +
+            '<span class="both-sep">/</span>' +
+            (kata?'<span class="kana-char kata-char">'+kata+'</span>':'') +
+          '</div>' +
+          '<div class="kana-rom">'+rom+'</div>' +
+          '<div class="kana-tag-dot"></div>';
+      } else {
+        var isHira = currentTab === 'hira';
+        var char = isHira ? hira : kata;
+        if (!char) { cell.className='kana-cell empty'; grid.appendChild(cell); return; }
+        cell.className = 'kana-cell ' + (isHira?'hira-cell':'kata-cell') + (isTagged?' tagged':'');
+        cell.onclick = function(){ openPop(row); };
+        cell.innerHTML =
+          '<div class="kana-char '+(isHira?'hira-char':'kata-char')+'">'+char+'</div>' +
+          '<div class="kana-rom">'+rom+'</div>' +
+          '<div class="kana-tag-dot"></div>';
+      }
+      grid.appendChild(cell);
+    });
+    wrap.appendChild(grid);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// POPUP
+// ═══════════════════════════════════════════════
+function openPop(row) {
+  popData = row;
+  var hira=row[0], kata=row[1], rom=row[2], ex=row[3], exm=row[4];
+
+  // Pair display
+  var pairHtml = '';
+  if (hira) pairHtml += '<div class="pop-kana-block"><div class="pop-kana-char" style="color:#f48fb1">'+hira+'</div><div class="pop-kana-label">ひらがな</div></div>';
+  if (kata) pairHtml += '<div class="pop-kana-block"><div class="pop-kana-char" style="color:#80deea">'+kata+'</div><div class="pop-kana-label">カタカナ</div></div>';
+  document.getElementById('pop-pair').innerHTML = pairHtml;
+  document.getElementById('pop-rom').textContent = rom;
+
+  // Examples
+  var exHtml = '<div class="pop-ex-label">例 / Example</div>';
+  if (ex && ex !== '(rare)' && ex !== '(object marker)') {
+    exHtml += '<div class="pop-ex-item">'+ex+' <span>= '+exm+'</span></div>';
+  } else {
+    exHtml += '<div class="pop-ex-item" style="color:rgba(255,255,255,.3)">—</div>';
+  }
+  document.getElementById('pop-examples').innerHTML = exHtml;
+
+  // Tag button
+  var tagKey = currentTab==='kata' ? kata : hira;
+  if (currentTab==='both') tagKey = hira||kata;
+  updateTagBtn(tagKey);
+  document.getElementById('pop-ov').classList.add('show');
+}
+
+function updateTagBtn(tagKey) {
+  var btn = document.getElementById('pop-tag-btn');
+  var tagged = !!(tagKey && kanaTags[tagKey]);
+  btn.className = 'pop-tag-btn ' + (tagged?'tagged':'untagged');
+  btn.textContent = tagged ? '★ タグ済み / Tagged' : '☆ タグする / Tag';
+  btn.dataset.key = tagKey || '';
+}
+
+function toggleTag() {
+  var key = document.getElementById('pop-tag-btn').dataset.key;
+  if (!key) return;
+  if (kanaTags[key]) delete kanaTags[key];
+  else kanaTags[key] = true;
+  saveKanaTags();
+  updateTagBtn(key);
+  render(); // refresh dots
+  showToast(kanaTags[key] ? '★ タグしました！' : 'タグを解除しました');
+}
+
+function closePop() {
+  document.getElementById('pop-ov').classList.remove('show');
+  popData = null;
+}
+
+// ═══════════════════════════════════════════════
+// TABS & MODES
+// ═══════════════════════════════════════════════
+function setTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  render();
+}
+function setMode(mode, el) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-pill').forEach(function(p){ p.classList.remove('active'); });
+  el.classList.add('active');
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// QUIZ MODE
+// ═══════════════════════════════════════════════
+var qQueue = [], qIdx = 0, qCorrect = 0;
+
+function startQuiz() {
+  // Build pool from current view
+  var all = BASIC.concat(DAKUTEN).concat(COMBO).filter(function(r){ return r[0]||r[1]; });
+  // shuffle
+  for (var i=all.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=all[i];all[i]=all[j];all[j]=t;}
+  qQueue = all.slice(0, Math.min(20, all.length));
+  qIdx = 0; qCorrect = 0;
+  document.getElementById('quiz-screen').classList.add('show');
+  renderQuiz();
+}
+
+function renderQuiz() {
+  if (qIdx >= qQueue.length) { showQuizEnd(); return; }
+  var row = qQueue[qIdx];
+  var isHira = currentTab !== 'kata';
+  var char = isHira ? (row[0]||row[1]) : (row[1]||row[0]);
+  var correct = row[2];
+
+  // Update progress
+  var pct = Math.round(qIdx/qQueue.length*100);
+  document.getElementById('qprog').style.width = pct + '%';
+  document.getElementById('q-score').textContent = qIdx + ' / ' + qQueue.length + '  ✓' + qCorrect;
+
+  // Question
+  document.getElementById('q-question').textContent = char;
+  document.getElementById('q-instr').textContent = 'ローマ字を選んでください / Choose the reading';
+
+  // Build choices (1 correct + 3 wrong)
+  var all = BASIC.concat(DAKUTEN).concat(COMBO).filter(function(r){return r[2]&&r[2]!==correct;});
+  for (var i=all.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=all[i];all[i]=all[j];all[j]=t;}
+  var wrongs = all.slice(0,3).map(function(r){return r[2];});
+  var choices = [correct].concat(wrongs);
+  for (var i=choices.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=choices[i];choices[i]=choices[j];choices[j]=t;}
+
+  var choicesEl = document.getElementById('q-choices');
+  choicesEl.innerHTML = '';
+  choices.forEach(function(ch) {
+    var btn = document.createElement('button');
+    btn.className = 'quiz-choice';
+    btn.textContent = ch;
+    btn.onclick = function() { answerQuiz(ch, correct, choicesEl); };
+    choicesEl.appendChild(btn);
+  });
+}
+
+function answerQuiz(chosen, correct, choicesEl) {
+  // Disable all
+  choicesEl.querySelectorAll('.quiz-choice').forEach(function(btn) {
+    btn.onclick = null;
+    if (btn.textContent === correct) btn.classList.add('correct');
+    else if (btn.textContent === chosen && chosen !== correct) btn.classList.add('wrong');
+  });
+  if (chosen === correct) qCorrect++;
+  qIdx++;
+  setTimeout(renderQuiz, 900);
+}
+
+function showQuizEnd() {
+  var pct = Math.round(qCorrect/qQueue.length*100);
+  document.getElementById('q-question').textContent = pct >= 80 ? '🎉' : pct >= 50 ? '😊' : '📚';
+  document.getElementById('q-instr').textContent = qCorrect + ' / ' + qQueue.length + ' 正解 (' + pct + '%)';
+  document.getElementById('q-choices').innerHTML =
+    '<button onclick="startQuiz()" style="grid-column:span 2;background:var(--accent);border:none;border-radius:12px;padding:1rem;color:#fff;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer">もう一度 / Retry</button>' +
+    '<button onclick="closeQuiz()" style="grid-column:span 2;background:rgba(255,255,255,.08);border:none;border-radius:12px;padding:1rem;color:var(--sub);font-family:inherit;font-size:.9rem;cursor:pointer">閉じる / Close</button>';
+  document.getElementById('qprog').style.width = '100%';
+  document.getElementById('q-score').textContent = '';
+}
+
+function closeQuiz() {
+  document.getElementById('quiz-screen').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+function showToast(msg) {
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2200);
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+loadKanaTags();
+render();
+</script>
+</body>
+</html>
