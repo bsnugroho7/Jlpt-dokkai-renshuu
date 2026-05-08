@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
+<title>漢字コレクション — JLPT 読解</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Space+Mono:wght@700&display=swap');
+:root{
+  --bg:#0f0f1a;--card:#1a1a2e;--card2:#16213e;
+  --border:rgba(255,255,255,.08);--text:#f0f0f0;--sub:rgba(255,255,255,.45);
+  --accent:#4f8ef7;--r:14px;--sh:0 4px 20px rgba(0,0,0,.4);
+  --n5:#2e7d32;--n4:#1565c0;--n3:#bf360c;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:40px}
+
+/* TOP NAV */
+.topnav{background:var(--card);border-bottom:1px solid var(--border);padding:.9rem 1.2rem;display:flex;align-items:center;gap:.8rem;position:sticky;top:0;z-index:100}
+.back-btn{background:rgba(255,255,255,.08);border:none;color:var(--text);width:36px;height:36px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none}
+.nav-title{font-size:1rem;font-weight:700;flex:1}
+.nav-sub{font-size:.72rem;color:var(--sub)}
+.search-btn{background:rgba(255,255,255,.08);border:none;color:var(--text);width:36px;height:36px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* SEARCH BAR */
+.search-wrap{padding:.7rem 1rem;background:var(--bg);border-bottom:1px solid var(--border);display:none}
+.search-wrap.show{display:block}
+.search-input{width:100%;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:.7rem 1rem;color:var(--text);font-size:.95rem;font-family:inherit;outline:none;transition:border-color .2s}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--sub)}
+
+/* TABS */
+.tabs{display:flex;padding:.7rem 1rem .3rem;gap:.4rem;background:var(--bg);position:sticky;top:57px;z-index:99;border-bottom:1px solid var(--border)}
+.tab{flex:1;padding:.55rem .3rem;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--sub);font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
+.tab.act.n5{background:var(--n5);border-color:var(--n5);color:#fff}
+.tab.act.n4{background:var(--n4);border-color:var(--n4);color:#fff}
+.tab.act.n3{background:var(--n3);border-color:var(--n3);color:#fff}
+.tab.act.all{background:linear-gradient(135deg,var(--n5),var(--n4),var(--n3));border-color:transparent;color:#fff}
+.tab.act.tagged{background:#f9a825;border-color:#f9a825;color:#fff}
+
+/* FILTER BAR */
+.filter-bar{display:flex;padding:.5rem 1rem;gap:.4rem;overflow-x:auto;background:var(--bg)}
+.fpill{padding:.3rem .8rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--sub);font-size:.72rem;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
+.fpill.act{background:rgba(79,142,247,.2);border-color:var(--accent);color:var(--accent)}
+
+/* STATS BAR */
+.stats-bar{display:flex;gap:.5rem;padding:.5rem 1rem;background:var(--bg);flex-wrap:wrap}
+.stat-chip{font-size:.7rem;color:var(--sub);background:var(--card);border:1px solid var(--border);padding:3px 10px;border-radius:20px}
+
+/* KANJI GRID */
+.grid-wrap{padding:.8rem 1rem}
+.kanji-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
+.kcell{background:var(--card);border-radius:12px;border:1.5px solid var(--border);padding:.7rem .3rem;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:all .15s;position:relative;min-height:80px;justify-content:center}
+.kcell:active{transform:scale(.94)}
+.kcell.n5{border-color:rgba(46,125,50,.3)}
+.kcell.n4{border-color:rgba(21,101,192,.3)}
+.kcell.n3{border-color:rgba(191,54,12,.3)}
+.kcell.tagged{border-color:#f9a825;background:rgba(249,168,37,.07)}
+.kchar{font-size:2rem;font-weight:700;line-height:1}
+.kcell.n5 .kchar{color:#81c784}
+.kcell.n4 .kchar{color:#64b5f6}
+.kcell.n3 .kchar{color:#ff8a65}
+.kread{font-size:.6rem;color:var(--sub);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.kmean{font-size:.62rem;color:rgba(255,255,255,.3);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ktag-dot{width:5px;height:5px;border-radius:50%;background:#f9a825;position:absolute;top:6px;right:6px;display:none}
+.kcell.tagged .ktag-dot{display:block}
+.lv-badge{position:absolute;top:4px;left:6px;font-size:.55rem;font-weight:700;padding:1px 5px;border-radius:8px}
+.kcell.n5 .lv-badge{background:rgba(46,125,50,.3);color:#81c784}
+.kcell.n4 .lv-badge{background:rgba(21,101,192,.3);color:#64b5f6}
+.kcell.n3 .lv-badge{background:rgba(191,54,12,.3);color:#ff8a65}
+
+/* empty state */
+.empty-state{text-align:center;padding:3rem 1.5rem;color:rgba(255,255,255,.3)}
+.empty-ico{font-size:3rem;margin-bottom:.5rem}
+
+/* POPUP */
+.pop-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center;padding:1.2rem;backdrop-filter:blur(4px)}
+.pop-ov.show{display:flex}
+.kpop{background:var(--card2);border-radius:20px;padding:1.8rem 1.4rem 1.4rem;width:100%;max-width:340px;animation:su .25s ease;position:relative;border:1px solid var(--border)}
+@keyframes su{from{transform:scale(.9) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.pclose{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.08);border:none;border-radius:50%;width:28px;height:28px;font-size:.9rem;cursor:pointer;color:var(--sub);display:flex;align-items:center;justify-content:center}
+
+.pop-char{font-size:5rem;font-weight:700;line-height:1;text-align:center;margin-bottom:.5rem}
+.pop-lv-badge{text-align:center;margin-bottom:.6rem}
+.pop-lv-pill{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 12px;border-radius:20px}
+.pop-reading{font-size:.9rem;color:var(--sub);text-align:center;margin-bottom:.4rem}
+.pop-meaning{font-size:1.1rem;font-weight:700;text-align:center;margin-bottom:.8rem}
+.pop-ex-box{background:rgba(255,255,255,.04);border-radius:10px;padding:.7rem 1rem;margin-bottom:.8rem}
+.pop-ex-label{font-size:.65rem;color:var(--sub);margin-bottom:.4rem;letter-spacing:.05em}
+.pop-ex-item{font-size:.85rem;padding:.15rem 0;color:var(--text)}
+
+/* STROKE ORDER placeholder */
+.pop-stroke{background:rgba(255,255,255,.03);border-radius:10px;padding:.6rem;margin-bottom:.8rem;text-align:center}
+.pop-stroke-hint{font-size:.7rem;color:rgba(255,255,255,.2)}
+
+.pop-tag-btn{width:100%;padding:.75rem;border-radius:12px;border:none;font-family:inherit;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s}
+.pop-tag-btn.un{background:rgba(255,255,255,.08);color:var(--sub)}
+.pop-tag-btn.tg{background:#f9a825;color:#fff}
+
+/* QUIZ SCREEN */
+#quiz-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.5rem}
+#quiz-screen.show{display:flex}
+.qprog-wrap{width:100%;max-width:360px;background:rgba(255,255,255,.08);height:4px;border-radius:2px;margin-bottom:2rem;overflow:hidden}
+.qprog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
+.q-char{font-size:5rem;font-weight:700;margin-bottom:.5rem;text-align:center}
+.q-instr{font-size:.8rem;color:var(--sub);margin-bottom:1.5rem;text-align:center}
+.q-choices{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;width:100%;max-width:360px}
+.q-choice{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:1rem .5rem;text-align:center;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:.9rem;color:var(--text);transition:all .15s;line-height:1.4}
+.q-choice:active{transform:scale(.96)}
+.q-choice.ok{background:#1b5e20;border-color:#43a047;color:#fff}
+.q-choice.ng{background:#b71c1c;border-color:#ef5350;color:#fff}
+.q-score{font-size:.85rem;color:var(--sub);margin-top:1.5rem}
+.q-close{position:fixed;top:1.2rem;right:1.2rem;background:rgba(255,255,255,.1);border:none;color:var(--text);width:36px;height:36px;border-radius:50%;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.quiz-banner{background:linear-gradient(135deg,#1a237e,#4a148c);border-radius:var(--r);padding:1rem 1.2rem;margin:.3rem 1rem .2rem;display:flex;align-items:center;gap:.8rem;cursor:pointer;border:1px solid rgba(255,255,255,.1)}
+.quiz-banner:active{transform:scale(.98)}
+.qb-ico{font-size:1.6rem}
+.qb-info{flex:1}
+.qb-title{font-size:.9rem;font-weight:700}
+.qb-sub{font-size:.72rem;color:rgba(255,255,255,.6);margin-top:2px}
+
+/* TOAST */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,30,50,.95);color:#fff;padding:.6rem 1.2rem;border-radius:20px;font-size:.8rem;opacity:0;transition:all .3s;z-index:999;pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<!-- KANJI POPUP -->
+<div id="pop-ov" class="pop-ov" onclick="if(event.target===this)closePop()">
+  <div class="kpop">
+    <button class="pclose" onclick="closePop()">✕</button>
+    <div class="pop-char" id="pop-char"></div>
+    <div class="pop-lv-badge"><span class="pop-lv-pill" id="pop-lv-pill"></span></div>
+    <div class="pop-reading" id="pop-reading"></div>
+    <div class="pop-meaning" id="pop-meaning"></div>
+    <div class="pop-ex-box">
+      <div class="pop-ex-label">使用例 / Examples</div>
+      <div id="pop-examples"></div>
+    </div>
+    <button class="pop-tag-btn" id="pop-tag-btn" onclick="toggleTag()"></button>
+  </div>
+</div>
+
+<!-- QUIZ SCREEN -->
+<div id="quiz-screen">
+  <button class="q-close" onclick="closeQuiz()">✕</button>
+  <div class="qprog-wrap"><div class="qprog-fill" id="qprog"></div></div>
+  <div class="q-char" id="q-char"></div>
+  <div class="q-instr" id="q-instr"></div>
+  <div class="q-choices" id="q-choices"></div>
+  <div class="q-score" id="q-score"></div>
+</div>
+
+<!-- TOP NAV -->
+<div class="topnav">
+  <a href="index.html" class="back-btn">‹</a>
+  <div><div class="nav-title">漢字コレクション</div><div class="nav-sub">Kanji Collection by Level</div></div>
+  <button class="search-btn" onclick="toggleSearch()" title="検索">🔍</button>
+</div>
+
+<!-- SEARCH -->
+<div class="search-wrap" id="search-wrap">
+  <input class="search-input" id="search-input" type="text" placeholder="漢字・読み方・意味で検索..." oninput="onSearch(this.value)">
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab all act" onclick="setTab('all',this)">全部</button>
+  <button class="tab n5" onclick="setTab('n5',this)">N5</button>
+  <button class="tab n4" onclick="setTab('n4',this)">N4</button>
+  <button class="tab n3" onclick="setTab('n3',this)">N3</button>
+  <button class="tab tagged" onclick="setTab('tagged',this)">★</button>
+</div>
+
+<!-- FILTER -->
+<div class="filter-bar">
+  <button class="fpill act" onclick="setFilter('all',this)">すべて</button>
+  <button class="fpill" onclick="setFilter('az',this)">読み順</button>
+  <button class="fpill" onclick="setFilter('tagged',this)">タグ済み先</button>
+  <button class="fpill" onclick="setFilter('untagged',this)">未タグ</button>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar" id="stats-bar"></div>
+
+<!-- QUIZ BANNER -->
+<div class="quiz-banner" onclick="startQuiz()">
+  <span class="qb-ico">🎯</span>
+  <div class="qb-info"><div class="qb-title">漢字クイズ / Kanji Quiz</div><div class="qb-sub">意味・読み方を当てよう！</div></div>
+  <span style="color:rgba(255,255,255,.4);font-size:1.3rem">›</span>
+</div>
+
+<!-- GRID -->
+<div class="grid-wrap"><div class="kanji-grid" id="kanji-grid"></div></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// KANJI DATA — N5 / N4 / N3
+// ═══════════════════════════════════════════════
+var KANJI = {
+n5:[
+  ["食","しょく・た","food/eat","食べ物、食事、食堂"],
+  ["水","すい・みず","water","水、水曜日、水道"],
+  ["山","さん・やま","mountain","山、富士山、登山"],
+  ["人","じん・ひと","person","人、日本人、大人"],
+  ["日","にち・ひ","day/sun","今日、日曜日、毎日"],
+  ["月","げつ・つき","month/moon","月曜日、今月、月光"],
+  ["年","ねん・とし","year","今年、来年、毎年"],
+  ["大","だい・おお","big/great","大学、大きい、大人"],
+  ["小","しょう・ちい","small","小学校、小さい、縮小"],
+  ["学","がく・まな","study/learn","学校、大学、学生"],
+  ["先","せん","previous/ahead","先生、先週、先月"],
+  ["生","せい・い","life/live","先生、学生、生きる"],
+  ["時","じ・とき","time/hour","時間、3時、時々"],
+  ["本","ほん・もと","book/origin","本、日本、基本"],
+  ["休","きゅう・やす","rest","休み、休日、休憩"],
+  ["来","らい・く","come/next","来週、来年、来る"],
+  ["帰","き・かえ","return","帰る、帰国、帰宅"],
+  ["友","ゆう・とも","friend","友だち、友人、親友"],
+  ["電","でん","electricity","電車、電話、電気"],
+  ["語","ご・かた","language/word","日本語、語る、物語"],
+  ["気","き・け","spirit/air","天気、気持ち、元気"],
+  ["車","しゃ・くるま","car/vehicle","自動車、電車、車両"],
+  ["行","こう・い","go/conduct","行く、旅行、行動"],
+  ["見","けん・み","see/view","見る、発見、意見"],
+  ["書","しょ・か","write/book","書く、読書、書類"],
+  ["読","どく・よ","read","読む、読書、音読"],
+  ["話","わ・はな","talk/story","話す、電話、会話"],
+  ["聞","ぶん・き","hear/listen","聞く、新聞、見聞"],
+  ["食","しょく・た","eat","食べる、食事、食堂"],
+  ["飲","いん・の","drink","飲む、飲料、飲食"],
+],
+n4:[
+  ["設","せつ・もう","set up/establish","設備、設定、設ける"],
+  ["欠","けつ・か","lack/absent","欠席、欠ける、欠点"],
+  ["節","せつ・ふし","season/save","節約、節分、季節"],
+  ["混","こん・ま","mix/crowded","混雑、混む、混合"],
+  ["環","かん","ring/circle","環境、環状、循環"],
+  ["廃","はい・すた","abolish/abandon","廃棄、廃止、廃れる"],
+  ["旬","しゅん","peak season","旬の食材、旬を味わう"],
+  ["継","けい・つ","inherit/continue","継続、継承、後継"],
+  ["清","せい・きよ","clean/pure","清掃、清潔、清める"],
+  ["接","せつ・つ","contact/connect","接客、接続、接する"],
+  ["推","すい・お","push/recommend","推奨、推測、推進"],
+  ["骨","こつ・ほね","bone/framework","骨折、骨格、骨董"],
+  ["削","さく・けず","shave/delete","削除、削減、削る"],
+  ["貸","たい・か","lend/rent","貸す、賃貸、貸出"],
+  ["棚","たな","shelf/rack","棚、本棚、棚卸し"],
+  ["録","ろく","record","記録、録音、登録"],
+  ["負","ふ・ま","lose/burden","負ける、負担、勝負"],
+  ["習","しゅう・なら","learn/practice","習う、学習、習慣"],
+  ["慣","かん・な","accustomed","習慣、慣れる、慣例"],
+  ["求","きゅう・もと","seek/demand","求める、要求、需要"],
+  ["効","こう・き","effect/efficient","効果、効率、有効"],
+  ["率","りつ・ひき","rate/lead","確率、効率、利率"],
+  ["確","かく・たし","certain/confirm","確認、確かめる、正確"],
+  ["準","じゅん","standard/level","標準、準備、基準"],
+  ["積","せき・つ","accumulate","積む、面積、蓄積"],
+  ["管","かん・くだ","pipe/control","管理、血管、土管"],
+  ["規","き","rule/standard","規制、規則、規模"],
+  ["律","りつ","law/discipline","法律、規律、自律"],
+  ["謙","けん","modest/humble","謙虚、謙遜、謙譲"],
+  ["誠","せい・まこと","sincere/honest","誠実、誠意、真誠"],
+],
+n3:[
+  ["振","しん・ふ","shake/reflect","振り返る、振る、振動"],
+  ["催","さい・もよお","hold (event)","開催、催す、催し物"],
+  ["募","ぼ・つの","recruit/solicit","募集、応募、募る"],
+  ["締","てい・し","tie/close","締め切り、締める、締結"],
+  ["俯","ふ・うつむ","face down/overlook","俯瞰、俯く"],
+  ["廃","はい・すた","abolish","廃業、廃止、廃墟"],
+  ["骨","こつ・ほね","bone","骨折、骨、骨格"],
+  ["継","けい・つ","continue","継承、継続、継ぐ"],
+  ["欲","よく・ほ","desire/want","意欲、欲しい、食欲"],
+  ["徹","てつ","thorough/penetrate","徹底、徹夜、貫徹"],
+  ["排","はい","expel/exclude","排除、排出、排水"],
+  ["朗","ろう・ほが","bright/aloud","朗読、朗らか、朗報"],
+  ["盛","せい・も","prosper/serve","盛況、盛る、盛大"],
+  ["審","しん","judge/examine","審査、審判、審議"],
+  ["遺","い・のこ","leave/inherit","遺伝、遺産、遺す"],
+  ["概","がい","general/rough","概念、概要、大概"],
+  ["慮","りょ・おもんばか","consider","考慮、配慮、遠慮"],
+  ["熟","じゅく・う","ripen/master","熟練、成熟、熟睡"],
+  ["献","けん・こん","offer/dedicate","貢献、献身、文献"],
+  ["徴","ちょう","sign/collect","特徴、徴収、象徴"],
+  ["滞","たい・とどこお","stagnate/stay","滞在、停滞、渋滞"],
+  ["潔","けつ・いさぎよ","clean/pure","清潔、潔い、高潔"],
+  ["漫","まん","rambling/manga","漫画、漫然、浪漫"],
+  ["激","げき・はげ","violent/intense","激しい、激減、感激"],
+  ["奨","しょう","encourage/prize","奨励、推奨、奨学"],
+  ["携","けい・たずさ","carry/involve","携帯、携わる、連携"],
+  ["措","そ・お","manage/place","措置、処置、措く"],
+  ["趣","しゅ・おもむき","taste/interest","趣味、趣旨、興趣"],
+  ["縦","じゅう・たて","vertical","縦横、縦書き、操縦"],
+  ["繁","はん・しげ","flourish/busy","繁栄、繁忙、繁盛"],
+],
+};
+
+// ═══════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════
+var TAG_KEY = 'jlpt_ktag_v4';
+var tags = {};
+function loadTags(){try{var r=localStorage.getItem(TAG_KEY);if(r){var d=JSON.parse(r);Object.keys(d).forEach(function(k){var v=d[k];if(v&&v.k)tags[v.k]=v;else tags[k]=v;});}}catch(e){}}
+function saveTags(){try{localStorage.setItem(TAG_KEY,JSON.stringify(tags));}catch(e){}}
+function isTagged(ch){return !!tags[ch]||!!(tags['n5_'+ch]||tags['n4_'+ch]||tags['n3_'+ch]);}
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+var curTab='all', curFilter='all', searchQ='', popCh=null;
+var qQueue=[], qIdx=0, qCorrect=0, qMode='mean';
+
+// ═══════════════════════════════════════════════
+// GET KANJI FOR CURRENT VIEW
+// ═══════════════════════════════════════════════
+function getKanji(){
+  var list=[];
+  var lvs = curTab==='all' ? ['n5','n4','n3'] : curTab==='tagged' ? ['n5','n4','n3'] : [curTab];
+  lvs.forEach(function(lv){
+    KANJI[lv].forEach(function(row){
+      list.push({ch:row[0],r:row[1],m:row[2],e:row[3],lv:lv});
+    });
+  });
+  // filter tagged tab
+  if(curTab==='tagged') list=list.filter(function(k){return isTagged(k.ch);});
+  // search
+  if(searchQ){
+    var q=searchQ.toLowerCase();
+    list=list.filter(function(k){
+      return k.ch.includes(searchQ)||k.r.includes(q)||k.m.toLowerCase().includes(q)||k.e.includes(searchQ);
+    });
+  }
+  // filter
+  if(curFilter==='tagged') list=list.filter(function(k){return isTagged(k.ch);});
+  if(curFilter==='untagged') list=list.filter(function(k){return !isTagged(k.ch);});
+  if(curFilter==='az') list.sort(function(a,b){return a.r.localeCompare(b.r,'ja');});
+  if(curFilter==='tagged') list.sort(function(a,b){return (isTagged(b.ch)?1:0)-(isTagged(a.ch)?1:0);});
+  return list;
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+var LVC={n5:'#81c784',n4:'#64b5f6',n3:'#ff8a65'};
+var LVB={n5:'rgba(46,125,50,.3)',n4:'rgba(21,101,192,.3)',n3:'rgba(191,54,12,.3)'};
+
+function render(){
+  var list=getKanji();
+  // stats
+  var total=list.length, tagged=list.filter(function(k){return isTagged(k.ch);}).length;
+  var n5c=list.filter(function(k){return k.lv==='n5';}).length;
+  var n4c=list.filter(function(k){return k.lv==='n4';}).length;
+  var n3c=list.filter(function(k){return k.lv==='n3';}).length;
+  document.getElementById('stats-bar').innerHTML=
+    mkChip(total+'字 表示')+
+    (n5c?mkChip('N5: '+n5c):'')+
+    (n4c?mkChip('N4: '+n4c):'')+
+    (n3c?mkChip('N3: '+n3c):'')+
+    mkChip('★ '+tagged+' タグ済み');
+
+  var grid=document.getElementById('kanji-grid');
+  if(!list.length){
+    grid.parentElement.innerHTML='<div class="empty-state"><div class="empty-ico">🔍</div><div>該当する漢字がありません</div></div>';
+    return;
+  }
+  grid.innerHTML='';
+  list.forEach(function(k){
+    var tg=isTagged(k.ch);
+    var cell=document.createElement('div');
+    cell.className='kcell '+k.lv+(tg?' tagged':'');
+    cell.onclick=function(){openPop(k);};
+    cell.innerHTML=
+      '<div class="ktag-dot"></div>'+
+      (curTab==='all'?'<span class="lv-badge">'+k.lv.toUpperCase()+'</span>':'')+
+      '<div class="kchar">'+k.ch+'</div>'+
+      '<div class="kread">'+k.r.split('・')[0]+'</div>'+
+      '<div class="kmean">'+k.m.split('/')[0]+'</div>';
+    grid.appendChild(cell);
+  });
+}
+function mkChip(t){return '<span class="stat-chip">'+t+'</span>';}
+
+// ═══════════════════════════════════════════════
+// POPUP
+// ═══════════════════════════════════════════════
+function openPop(k){
+  popCh=k;
+  var col=LVC[k.lv]||'#fff';
+  document.getElementById('pop-char').textContent=k.ch;
+  document.getElementById('pop-char').style.color=col;
+  var pill=document.getElementById('pop-lv-pill');
+  pill.textContent=k.lv.toUpperCase()+' レベル';
+  pill.style.background=LVB[k.lv];
+  pill.style.color=col;
+  document.getElementById('pop-reading').textContent=k.r;
+  document.getElementById('pop-meaning').textContent=k.m;
+  // examples
+  var exs=k.e.split('、');
+  document.getElementById('pop-examples').innerHTML=exs.map(function(ex){
+    return '<div class="pop-ex-item">'+ex+'</div>';
+  }).join('');
+  updateTagBtn();
+  document.getElementById('pop-ov').classList.add('show');
+}
+function closePop(){document.getElementById('pop-ov').classList.remove('show');popCh=null;}
+function updateTagBtn(){
+  if(!popCh)return;
+  var btn=document.getElementById('pop-tag-btn');
+  var tg=isTagged(popCh.ch);
+  btn.className='pop-tag-btn '+(tg?'tg':'un');
+  btn.textContent=tg?'★ タグ済み / Tagged':'☆ タグする / Tag';
+}
+function toggleTag(){
+  if(!popCh)return;
+  var key=popCh.lv+'_'+popCh.ch;
+  if(isTagged(popCh.ch)){
+    delete tags[key];
+    delete tags[popCh.ch];
+  } else {
+    tags[key]={k:popCh.ch,r:popCh.r,m:popCh.m,e:popCh.e,lv:popCh.lv,kn:0,fg:0};
+  }
+  saveTags();updateTagBtn();render();
+  showToast(isTagged(popCh.ch)?'★ タグしました！':'タグを解除しました');
+}
+
+// ═══════════════════════════════════════════════
+// TABS & FILTERS
+// ═══════════════════════════════════════════════
+function setTab(tab,el){
+  curTab=tab; searchQ=''; document.getElementById('search-input').value='';
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('act');});
+  el.classList.add('act');
+  render();
+}
+function setFilter(f,el){
+  curFilter=f;
+  document.querySelectorAll('.fpill').forEach(function(p){p.classList.remove('act');});
+  el.classList.add('act');
+  render();
+}
+function toggleSearch(){
+  var wrap=document.getElementById('search-wrap');
+  wrap.classList.toggle('show');
+  if(wrap.classList.contains('show'))document.getElementById('search-input').focus();
+  else{searchQ='';document.getElementById('search-input').value='';render();}
+}
+function onSearch(v){searchQ=v;render();}
+
+// ═══════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════
+function startQuiz(){
+  var list=getKanji();
+  if(list.length<4){showToast('クイズには4字以上必要です');return;}
+  for(var i=list.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=list[i];list[i]=list[j];list[j]=t;}
+  qQueue=list.slice(0,Math.min(20,list.length));
+  qIdx=0;qCorrect=0;
+  // alternate between reading and meaning quiz
+  document.getElementById('quiz-screen').classList.add('show');
+  renderQ();
+}
+function renderQ(){
+  if(qIdx>=qQueue.length){showQEnd();return;}
+  var k=qQueue[qIdx];
+  var pct=Math.round(qIdx/qQueue.length*100);
+  document.getElementById('qprog').style.width=pct+'%';
+  document.getElementById('q-score').textContent=qIdx+'/'+qQueue.length+'  ✓'+qCorrect;
+  // alternate: even=meaning, odd=reading
+  qMode=qIdx%2===0?'mean':'read';
+  document.getElementById('q-char').textContent=k.ch;
+  document.getElementById('q-char').style.color=LVC[k.lv]||'#fff';
+  document.getElementById('q-instr').textContent=qMode==='mean'?'意味を選んでください / Choose the meaning':'読み方を選んでください / Choose the reading';
+  // build choices
+  var pool=qQueue.concat(KANJI.n5.concat(KANJI.n4).concat(KANJI.n3).map(function(r){return {ch:r[0],r:r[1],m:r[2],e:r[3]};}));
+  var correct=qMode==='mean'?k.m.split('/')[0]:k.r.split('・')[0];
+  var wrongs=[];
+  var seen={};seen[correct]=true;
+  for(var i=0;i<pool.length&&wrongs.length<3;i++){
+    var w=qMode==='mean'?pool[i].m.split('/')[0]:pool[i].r.split('・')[0];
+    if(!seen[w]){seen[w]=true;wrongs.push(w);}
+  }
+  var choices=[correct].concat(wrongs.slice(0,3));
+  for(var i=choices.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=choices[i];choices[i]=choices[j];choices[j]=t;}
+  var ce=document.getElementById('q-choices');ce.innerHTML='';
+  choices.forEach(function(ch){
+    var btn=document.createElement('button');btn.className='q-choice';
+    btn.textContent=ch;
+    btn.onclick=function(){answerQ(ch,correct,ce);};
+    ce.appendChild(btn);
+  });
+}
+function answerQ(chosen,correct,ce){
+  ce.querySelectorAll('.q-choice').forEach(function(btn){
+    btn.onclick=null;
+    if(btn.textContent===correct)btn.classList.add('ok');
+    else if(btn.textContent===chosen&&chosen!==correct)btn.classList.add('ng');
+  });
+  if(chosen===correct)qCorrect++;
+  qIdx++;
+  setTimeout(renderQ,900);
+}
+function showQEnd(){
+  var pct=Math.round(qCorrect/qQueue.length*100);
+  document.getElementById('q-char').textContent=pct>=80?'🎉':pct>=50?'😊':'📚';
+  document.getElementById('q-instr').textContent=qCorrect+' / '+qQueue.length+' 正解 ('+pct+'%)';
+  document.getElementById('q-choices').innerHTML=
+    '<button onclick="startQuiz()" style="grid-column:span 2;background:var(--accent);border:none;border-radius:12px;padding:1rem;color:#fff;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer">もう一度 / Retry</button>'+
+    '<button onclick="closeQuiz()" style="grid-column:span 2;background:rgba(255,255,255,.08);border:none;border-radius:12px;padding:1rem;color:var(--sub);font-family:inherit;font-size:.9rem;cursor:pointer">閉じる / Close</button>';
+  document.getElementById('qprog').style.width='100%';
+  document.getElementById('q-score').textContent='';
+}
+function closeQuiz(){document.getElementById('quiz-screen').classList.remove('show');}
+
+// TOAST
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
+
+// INIT
+loadTags();render();
+</script>
+</body>
+</html>
